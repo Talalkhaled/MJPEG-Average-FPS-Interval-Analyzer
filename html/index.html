@@ -1,0 +1,80 @@
+<!-- 
+
+Author: Talal Khaled Alharbi
+Date: 12 Mar. 2025
+
+This file works as an MJPEG-Streamer viewer that is a lightweight JavaScript-based tool for estimating the 
+FPS of an MJPEG stream using the average frame interval method. 
+This approach calculates FPS by measuring the time difference between consecutive frame loads and averaging over 
+a buffer of recent intervals.
+
+Prerequisites:
+    This project relies on MJPEG-Streamer. MJPEG-Streamer is an open source command line tool used to stream JPEG files 
+    over an IP-based network from a webcam to a viewer.
+
+    To be able to use this program, clone the following GitHub repository:
+        https://github.com/jacksonliam/mjpg-streamer
+
+    Here is a general command line to execute from a streaming machine using MJPEG-Streamer in a Linux system:
+        mjpg_streamer -i "<UVC_INPUT_PLUGIN> -d <DRIVER_PATH> -r <CAMERA_RESOLUTION> -f <FRAME_RATE>" -o "output_http.so -w ./www -p 8080"
+
+Warnings:
+    Please be aware that this repository is meant to demonstrait the technique of calculating recived FPS using a rolling window method
+
+    The Linux command streams to the local network to any web viewer, and requires NO authorization method
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>FPS Calculation with FIFO Buffer</title>
+  <style>
+    #fps-display {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: #3498db;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="fps-display">FPS: N/A</div>
+  <!-- Replace <LOCAL_IP_ADDRESS> with the streaming machine IP address -->
+  <img class="mjpeg-stream" src="http://<LOCAL_IP_ADDRESS>:8080/?action=stream" alt="MJPEG Stream" style="max-width: 100%;">
+
+  <script>
+    (function() {
+      const img = document.getElementsByClassName('mjpeg-stream');
+      const fpsDisplay = document.getElementsByClassName('fps-display');
+      const originalSrc = "http://<LOCAL_IP_ADDRESS>:8080/?action=stream";
+      
+        // Initial variable definitions
+      let lastFrameTime = null;
+      const intervals = [];
+      const maxSamples = 30;  // Use the last 10 intervals for averaging
+  
+      img.addEventListener('load', function() {
+        const now = performance.now();
+        if (lastFrameTime !== null) { // == null in first itteration
+          const delta = now - lastFrameTime;
+          intervals.push(delta);
+          if (intervals.length > maxSamples) {
+            intervals.shift();
+          }
+          // Compute average interval over collected samples.
+          const sum = intervals.reduce((a, b) => a + b, 0);
+          const avgInterval = sum / intervals.length;
+          // Get Average FPS in seconds since performance() measuers time in milliseconds
+          const fps = 1000 / avgInterval;
+          fpsDisplay.textContent = 'FPS: ' + fps.toFixed(2);
+          console.log("Average FPS: ", fps.toFixed(2), " Avg Interval:", avgInterval.toFixed(2));
+        }
+        lastFrameTime = now;
+        // Force the next frame to load immediately.
+        img.src = originalSrc + "&dummy=" + Date.now();
+      });
+    })();
+  </script>
+  
+</body>
+</html>
