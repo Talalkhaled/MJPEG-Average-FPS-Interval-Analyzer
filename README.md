@@ -3,4 +3,5 @@ A lightweight JavaScript-based tool for estimating the FPS of an MJPEG stream us
 
 # Features:
 ✅ Works with MJPEG streams embedded in <img> tags
+
 ✅ Simple, efficient, and dependency-free
